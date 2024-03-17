@@ -1,3 +1,5 @@
 # Demo requirements.
-gunicorn
+gunicorn==21.2.0
+flask==3.0.2
+
 -e .

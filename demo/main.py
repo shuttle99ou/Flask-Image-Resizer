@@ -1,5 +1,5 @@
 from flask import Flask, request, redirect, render_template
-from flask.ext.images import Images
+from flask_image_resizer import Images
 
 
 app = Flask(__name__)
