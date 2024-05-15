@@ -13,6 +13,9 @@ setup(
 
     packages=['flask_image_resizer'],
 
+    package_data={'': ['fonts/*.ttf']},
+    include_package_data=True,
+
     install_requires=[
         'Flask>=0.9',
         'itsdangerous==2.1.2',  # For Flask v0.9
