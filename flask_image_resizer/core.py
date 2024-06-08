@@ -409,10 +409,7 @@ class Images(object):
         height = int(height) if height else None
         quality = query.get('quality')
         quality = int(quality) if quality else 75
-        format = 'svg+xml'
-        if not path.endswith('.svg'):
-            format = (query.get('format', '') or os.path.splitext(path)[1][1:] or 'jpeg').lower()
-            format = {'jpg': 'jpeg'}.get(format, format)
+        image_format = get_image_format(path)
         has_version = 'version' in query
         use_cache = query.get('cache', True)
         enlarge = query.get('enlarge', False)
@@ -422,12 +419,12 @@ class Images(object):
 
         cache_mtime = None
         cache_dir = current_app.config['IMAGES_CACHE']
-        cache_path = os.path.join(cache_dir, format)
+        cache_path = os.path.join(cache_dir, image_format)
         if use_cache:
             # The parts in this initial list were parameters cached in version 1.
             # In order to avoid regenerating all images when a new feature is
             # added, we append (feature_name, value) tuples to the end.
-            cache_key_parts = [path, mode, width, height, quality, format, background]
+            cache_key_parts = [path, mode, width, height, quality, image_format, background]
             if transform:
                 cache_key_parts.append(('transform', transform))
             if sharpen:
@@ -437,10 +434,10 @@ class Images(object):
 
             cache_key = hashlib.md5(repr(tuple(cache_key_parts)).encode('utf-8')).hexdigest()
             cache_dir = os.path.join(current_app.config['IMAGES_CACHE'], cache_key[:2])
-            cache_path = os.path.join(cache_dir, cache_key + '.' + format)
+            cache_path = os.path.join(cache_dir, cache_key + '.' + image_format)
             cache_mtime = os.path.getmtime(cache_path) if os.path.exists(cache_path) else None
 
-        mimetype = 'image/%s' % format
+        mimetype = 'image/%s' % image_format
         max_age = 31536000 if has_version else current_app.config['IMAGES_MAX_AGE']
 
         if not use_cache or not cache_mtime or cache_mtime < raw_modified_time:
@@ -468,7 +465,7 @@ class Images(object):
 
                 if not use_cache:
                     fh = StringIO()
-                    image.save(fh, format, quality=quality)
+                    image.save(fh, image_format, quality=quality)
                     return fh.getvalue(), 200, [
                         ('Content-Type', mimetype),
                         ('Cache-Control', str(max_age)),
@@ -476,7 +473,7 @@ class Images(object):
 
                 makedirs(cache_dir)
                 cache_file = open(cache_path, 'wb')
-                image.save(cache_file, format, quality=quality)
+                image.save(cache_file, image_format, quality=quality)
                 cache_file.close()
 
         return send_file(cache_path, mimetype=mimetype, max_age=max_age)
@@ -486,6 +483,7 @@ class Images(object):
 def resized_img_size(path, **kw):
     self = current_app.extensions['images']
     return self.calculate_size(path, **kw)
+
 
 def resized_img_attrs(path, hidpi=None, width=None, height=None, enlarge=False, **kw):
     
@@ -583,6 +581,21 @@ def get_aspect_ratio(path, filename):
         return width / height
     except:  # if image doesn't exist
         return None
+
+
+def get_image_format(path: str) -> str:
+    """
+    We return the format from Pillow.
+
+    If there is an issue with Pillow, we return 'jpeg'.
+    """
+    try:
+        # Try to get format from PIL first
+        image = Image.open(path)
+        return image.format.lower()
+    except Exception as e:
+        current_app.logger.error(f'Exception: {e}')
+        return 'jpeg'
 
 
 @lru_cache(maxsize=1024)
