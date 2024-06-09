@@ -14,7 +14,7 @@ setup(
     packages=['flask_image_resizer'],
 
     install_requires=[
-        'Flask>=0.9',
+        'Flask>=2.2.4',
         'itsdangerous>=2.1.2',  # For Flask v0.9
         'Pillow>=9.1.0',
         'six>=1.16.0',
