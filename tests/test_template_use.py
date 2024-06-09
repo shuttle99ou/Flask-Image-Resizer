@@ -1,4 +1,6 @@
-from . import *
+from flask import render_template_string
+
+from utils import TestCase
 
 
 class TestTemplateUse(TestCase):
@@ -13,10 +15,7 @@ class TestTemplateUse(TestCase):
 
         res = self.client.get('/resized_img_src')
         self.assert200(res)
-        if PY3:
-            self.assertIn('src="/imgsizer/cc.png?', res.data.decode('utf-8'))
-        else:
-            self.assertIn('src="/imgsizer/cc.png?', res.data)
+        self.assertIn('src="/imgsizer/cc.png?', res.data.decode('utf-8'))
 
     def test_url_for(self):
 
@@ -28,7 +27,4 @@ class TestTemplateUse(TestCase):
 
         res = self.client.get('/url_for')
         self.assert200(res)
-        if PY3:
-            self.assertIn('src="/imgsizer/cc.png?', res.data.decode('utf-8'))
-        else:
-            self.assertIn('src="/imgsizer/cc.png?', res.data)
+        self.assertIn('src="/imgsizer/cc.png?', res.data.decode('utf-8'))
