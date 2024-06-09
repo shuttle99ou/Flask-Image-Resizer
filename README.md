@@ -12,3 +12,10 @@ Flask-Image-Resizer is also a Flask extension that provides dynamic image resizi
 - Add `_find_img`
 - Add `get_aspect_ratio`
 - Add `calculate_height`
+
+## How to run the demo:
+Go into the `demo` folder, and run the following command:
+
+```bash
+$ python -m flask --app main run
+```

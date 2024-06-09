@@ -1,4 +1,9 @@
-from . import *
+from urllib.parse import urlsplit, parse_qsl
+
+from flask import url_for
+
+from flask_image_resizer import resized_img_src
+from utils import TestCase, flask_version
 
 
 class TestUrlBuild(TestCase):

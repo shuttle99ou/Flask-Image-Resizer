@@ -1,5 +1,5 @@
 # Demo requirements.
 gunicorn==21.2.0
-flask==3.0.2
+flask>=2.2.4
 
 -e .

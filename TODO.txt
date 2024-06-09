@@ -1,3 +1,5 @@
-- Define release version
 - Update the changelog
 - Update AUTHORS.txt?
+- Add github actions for unittest
+- Add pre-commit
+- Add black formatter
