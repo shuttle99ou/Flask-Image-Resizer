@@ -319,8 +319,8 @@ class Images(object):
         else:
             raise RuntimeError('unhandled mode %r' % size.mode)
     
-    def post_process(self, image, sharpen=None):
-
+    @staticmethod
+    def apply_sharpen(image, sharpen=None):
         if sharpen:
             assert len(sharpen) == 3, 'unsharp-mask has 3 parameters'
             image = image.filter(ImageFilter.UnsharpMask(
@@ -330,6 +330,23 @@ class Images(object):
             ))
 
         return image
+
+    def post_process(self, post_process_data: dict):
+        """
+        This is a hook that you can replace
+        and use to modify the image after it has been processed
+        by Flask-Image-Resizer.
+
+        Keep in mind that you should replace the image inside
+        your post_process with the new one; that's why we
+        include the path of the image.
+
+        :param post_process_data:
+            Contains the following:
+            image, cache_file, cache_path, cache_dir, path,
+            format, quality, svg_minify_options, query
+        """
+        pass
 
     def handle_request(self, path):
 
@@ -409,7 +426,7 @@ class Images(object):
         height = int(height) if height else None
         quality = query.get('quality')
         quality = int(quality) if quality else 75
-        image_format = get_image_format(path)
+        image_format = get_image_format(path, query)
         has_version = 'version' in query
         use_cache = query.get('cache', True)
         enlarge = query.get('enlarge', False)
@@ -444,10 +461,13 @@ class Images(object):
 
             log.info('resizing %r for %s' % (path, query))
 
-            # This is not in flask_images
-            # We added this
+            # We don't resize/sharpen svg files; we pass them to scour
+            # with SVG_MINIFY_OPTIONS
             if path.endswith('.svg'):
+                # This is so we can save/load the image to the right directory
                 makedirs(cache_dir)
+                # This optimizes/cleans the SVG file, reducing its size and removing
+                # unnecessary data.
                 scour.start(SVG_MINIFY_OPTIONS, open(path, 'rb'), open(cache_path, 'wb'))
             else:
                 image = Image.open(path)
@@ -459,9 +479,9 @@ class Images(object):
                                     transform=transform,
                                     width=width,
                                     )
-                image = self.post_process(image,
-                                          sharpen=sharpen,
-                                          )
+                image = self.apply_sharpen(image,
+                                           sharpen=sharpen,
+                                           )
 
                 if not use_cache:
                     fh = StringIO()
@@ -475,6 +495,20 @@ class Images(object):
                 cache_file = open(cache_path, 'wb')
                 image.save(cache_file, image_format, quality=quality)
                 cache_file.close()
+
+        # TODO: This should be part of Image object
+        # We are passing all that we can here to post_process, so it's available when anything
+        # outside the project wants to be modified
+        post_process_data = {
+            'cache_path': cache_path,
+            'cache_dir': cache_dir,
+            'path': path,  # Image name with extension
+            'format': image_format,
+            'quality': quality,
+            'svg_minify_options': SVG_MINIFY_OPTIONS,
+            'query': query,
+        }
+        self.post_process(post_process_data)
 
         return send_file(cache_path, mimetype=mimetype, max_age=max_age)
 
@@ -583,7 +617,7 @@ def get_aspect_ratio(path, filename):
         return None
 
 
-def get_image_format(path: str) -> str:
+def get_image_format(path: str, query) -> str:
     """
     We return the format from Pillow.
 
@@ -591,11 +625,14 @@ def get_image_format(path: str) -> str:
     """
     try:
         # Try to get format from PIL first
-        image = Image.open(path)
-        return image.format.lower()
-    except Exception as e:
-        current_app.logger.error(f'Exception: {e}')
-        return 'jpeg'
+        with Image.open(path) as image:
+            return image.format.lower()
+    except Exception:
+        image_format = 'svg+xml'
+        if not path.endswith('.svg'):
+            image_format = (query.get('format', '') or os.path.splitext(path)[1][1:] or 'jpeg').lower()
+            image_format = {'jpg': 'jpeg'}.get(image_format, image_format)
+        return image_format
 
 
 @lru_cache(maxsize=1024)
