@@ -1,4 +1,6 @@
-from . import *
+from flask import url_for
+
+from utils import TestCase
 
 
 class TestURLEscaping(TestCase):

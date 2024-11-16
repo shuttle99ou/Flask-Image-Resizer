@@ -1,13 +1,15 @@
-from . import *
+from flask_image_resizer import ImageSize
+
+from utils import TestCase
 
 
 def make_transform(width=100, height=100):
     return ['EXTENT', width, height, 0, 0, 100, 100]
 
+
 class TestImageSize(TestCase):
 
     def test_reshape(self):
-
         s = ImageSize(transform=make_transform(), width=50)
         self.assertFalse(s.needs_enlarge)
         self.assertEqual(s.width, 50)
@@ -37,7 +39,6 @@ class TestImageSize(TestCase):
         self.assertTrue(s.needs_enlarge)
         self.assertEqual(s.width, 100)
         self.assertEqual(s.height, 100)
-
 
     def test_crop_enlarge(self):
 
@@ -142,7 +143,6 @@ class TestImageSize(TestCase):
         self.assertEqual(s.height, 150)
         self.assertEqual(s.op_width, 150)
         self.assertEqual(s.op_height, 150)
-
 
     def test_pad_enlarge(self):
 

@@ -1,8 +1,10 @@
-from . import *
+from urllib.parse import urlsplit, parse_qsl
+from flask import url_for
+
+from utils import TestCase
 
 
 class TestRemote(TestCase):
-
 
     def test_basics(self):
 
