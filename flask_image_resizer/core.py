@@ -37,6 +37,7 @@ from hmac import compare_digest
 from . import modes
 from .size import ImageSize
 from .transform import Transform
+from .utils import add_centered_text_with_outline
 
 class SVG_MINIFY_OPTIONS:
     digits = 5
@@ -413,6 +414,7 @@ class Images(object):
         has_version = 'version' in query
         use_cache = query.get('cache', True)
         enlarge = query.get('enlarge', False)
+        text = query.get('text')
 
         sharpen = query.get('sharpen')
         sharpen = re.split(r'[+:;,_/ ]', sharpen) if sharpen else None
@@ -462,6 +464,9 @@ class Images(object):
                 image = self.post_process(image,
                                           sharpen=sharpen,
                                           )
+
+                if text:
+                    image = add_centered_text_with_outline(image, text=text, font='Montserrat-Regular.ttf')
 
                 if not use_cache:
                     fh = StringIO()
