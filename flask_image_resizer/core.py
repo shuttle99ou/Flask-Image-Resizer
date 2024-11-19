@@ -409,7 +409,7 @@ class Images(object):
         height = int(height) if height else None
         quality = query.get('quality')
         quality = int(quality) if quality else 75
-        image_format = get_image_format(path)
+        image_format = get_image_format(path, query)
         has_version = 'version' in query
         use_cache = query.get('cache', True)
         enlarge = query.get('enlarge', False)
@@ -583,7 +583,7 @@ def get_aspect_ratio(path, filename):
         return None
 
 
-def get_image_format(path: str) -> str:
+def get_image_format(path: str, query) -> str:
     """
     We return the format from Pillow.
 
@@ -593,9 +593,12 @@ def get_image_format(path: str) -> str:
         # Try to get format from PIL first
         image = Image.open(path)
         return image.format.lower()
-    except Exception as e:
-        current_app.logger.error(f'Exception: {e}')
-        return 'jpeg'
+    except Exception:
+        image_format = 'svg+xml'
+        if not path.endswith('.svg'):
+            image_format = (query.get('format', '') or os.path.splitext(path)[1][1:] or 'jpeg').lower()
+            image_format = {'jpg': 'jpeg'}.get(image_format, image_format)
+        return image_format
 
 
 @lru_cache(maxsize=1024)
